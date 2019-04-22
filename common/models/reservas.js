@@ -11,8 +11,9 @@ module.exports = function(Reservas) {
             var inicioEm = (ctx.instance.inicioEm).getTime();
             ctx.instance.duracao = (fimEm - inicioEm) / (1000 * 60);
             ctx.instance.valor = ctx.instance.duracao * (0.5);
-            
-            
+            if (ctx.instance.duracao<60){
+                throw new Error();
+            }
         }
         next();
     });
