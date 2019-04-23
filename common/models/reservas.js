@@ -2,25 +2,42 @@
 'use strict';
 
 module.exports = function(Reservas) {
-Reservas.observe('before save', function(ctx, next) {
-    var fimEm = (ctx.instance.fimEm).getTime();
-    var inicioEm = (ctx.instance.inicioEm).getTime();
-    if (ctx.isNewInstance) {
-    ctx.instance.duracao = (fimEm - inicioEm) / (1000 * 60);
-    ctx.instance.valor = ctx.instance.duracao * (0.5);
-    };
-    next();
-});
 
-Reservas.observe('before delete', function naoDeletar(ctx, next) {
-    var err = new Error('Nao pode deletar. Mudar status pra cancelada');
-    err.statusCode = 400;
-    var idDeletado = ctx.where.id;
-    return {idDeletado};
-    next(err);
-});
+    Reservas.observe('before save', function(ctx, next) {
+        if (ctx.isNewInstance){
+            var fimEm = (ctx.instance.fimEm).getTime();
+            var inicioEm = (ctx.instance.inicioEm).getTime();
+            ctx.instance.duracao = (fimEm - inicioEm) / (1000 * 60);
+            ctx.instance.valor = ctx.instance.duracao * (0.5);
+            if (ctx.instance.duracao < 60) {
+                var err = new Error();
+                err.statusCode = 422;
+                err.message = "tem menos de 60 min de duracao"
+                return next(err);
+            }
+        }
+        next();
+    });
+    
+    Reservas.observe('before delete', (ctx, next) => {
+        
+        var now = new Date();
+        var alterarStatus = ctx.where.id;
+        console.log(alterarStatus);
+     
+        Reservas.findById(ctx.where.id, (err, instance) => {
+            var err = new Error();
+            err.statusCode = 400;
+            err.message = "Reservas não devem ser deletadas. Alterar o status pra cancelada."
+            instance.canceladaEm = now;
+            if (err) {
+                ctx.hookState.deletedModelInstance = instance;  
+                instance.canceladaEm = now;
+                console.log(ctx.hookState.deletedModelInstance);
+                return next(err);
+            }
+            next(ctx);
+        });
+    });
 
-console.log('testando123');
-
-// ctx.instance.status = 'cancelada'
-};
+}
