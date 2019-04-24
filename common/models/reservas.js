@@ -27,10 +27,13 @@ module.exports = function(Reservas) {
             var inicioEm = (ctx.instance.inicioEm).getTime();
             ctx.instance.duracao = (fimEm - inicioEm) / (1000 * 60);
             ctx.instance.valor = ctx.instance.duracao * (0.5);
-            if (ctx.instance.duracao < 60) {
+            var horaInteira = inicioEm % 10000;
+            var duracaoMultiplo60 = ctx.instance.duracao % 60;
+            console.log(horaInteira);
+            if (duracaoMultiplo60 !== 0 || horaInteira !== 0) {
                 var err = new Error();
                 err.statusCode = 422;
-                err.message = "tem menos de 60 min de duracao"
+                err.message = "tem menos de 60 min de duracao ou nao comeca em hora inteira.";
                 return next(err);
             }
         }
