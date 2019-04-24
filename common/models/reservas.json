@@ -15,7 +15,7 @@
     },
     "criadaEm": {
       "type": "date",
-      "defaultFn": "now"      
+      "defaultFn": "now"
     },
     "inicioEm": {
       "type": "date",
@@ -29,21 +29,51 @@
       "type": "string",
       "default": "ativo"
     },
-    "duracao" : {
+    "duracao": {
       "type": "number",
-      "default":"0"
+      "default": "0"
     },
-    "valor":{
-      "type":"number",
-      "default":"30"
+    "valor": {
+      "type": "number",
+      "default": "30"
     },
-    "canceladaEm":{
-      "type":"date",
+    "canceladaEm": {
+      "type": "date",
       "required": false
     },
+    "validations": {
+      "type": []
+    },
+    "relations": {
+      "type": {}
+    },
+    "acls": {
+      "type": []
+    },
+    "methods": {
+      "type": {}
+    }
+  },
   "validations": [],
   "relations": {},
   "acls": [],
-  "methods": {}
+  "methods": {
+    "prototype.softDelete": {
+      "returns": [
+        {
+          "arg": "result",
+          "type": "object",
+          "root": true,
+          "description": ""
+        }
+      ],
+      "description": "",
+      "http": [
+        {
+          "path": "/",
+          "verb": "delete"
+        }
+      ]
+    }
   }
 }
