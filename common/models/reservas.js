@@ -2,11 +2,6 @@
 'use strict';
 
 module.exports = function(Reservas) {
-
-    var caso1 = null;
-    var caso2 = null;
-    var caso3 = null;
-    var caso4 = null;
     
     //console.log(Reservas.definition.properties);
     Reservas.disableRemoteMethod('deleteById', true);			// Removes (DELETE) /products/:id
@@ -29,37 +24,69 @@ module.exports = function(Reservas) {
             var horaInteira = inicioEm % 10000;
             var duracaoMultiplo60 = ctx.instance.duracao % 60;
             console.log(horaInteira);
-            
-            //trocar logica do where pra inicioEm<ctx.instance.inicioEm... 4 casos
-            Reservas.find({where: {and: {lt: {inicioEm: ctx.instance.fimEm}, gt: {fimEm: ctx.instance.fimEm}}}}, function(err,data){
-                caso1 = data;
-                console.log("caso 1"+ JSON.stringify(caso1))}
-            );
-            Reservas.find({where: {and: {lt: {inicioEm: ctx.instance.inicioEm}, gt: {fimEm: ctx.instance.inicioEm}}}}, function(err,data){
-                caso2 = data;
-                console.log("caso 2"+ JSON.stringify(caso2))}
-            );
-            Reservas.find({where: {and: {gt: {inicioEm: ctx.instance.inicioEm}, lt: {fimEm: ctx.instance.fimEm}}}}, function(err,data){
-                caso3 = data;
-                console.log("caso 3"+ JSON.stringify(caso3))}
-            );
-            Reservas.find({where: {and: {lt: {inicioEm: ctx.instance.inicioEm}, gt: {fimEm: ctx.instance.fimEm}}}}, function(err,data){
-                caso4 = data;
-                console.log("caso 4"+ JSON.stringify(caso4))}
-            );
-            
             if (duracaoMultiplo60 !== 0 || horaInteira !== 0) {
                 var err = new Error();
                 err.statusCode = 422;
-                err.message = "tem menos de 60 min de duracao ou nao comeca em hora inteira.";
-                return next(err);
-            } else if (caso1 !== null || caso2 !== null || caso3 !== null || caso4 !== null) {
-                var err = new Error();
-                err.statusCode = 422;
-                err.message = "Horário indisponível.";
+                err.message = "a duracao não é multiplo de 60 min ou nao comeca em hora inteira.";
                 return next(err);
             }
-            next();
+            
+            //trocar logica do where pra inicioEm<ctx.instance.inicioEm... 4 casos
+            async function sobreposicaoHorario(){
+                var query1 = Reservas.find(
+                {
+                    where: {
+                        inicioEm: {lt: ctx.instance.fimEm.toISOString()},
+                        fimEm: {gt: ctx.instance.fimEm.toISOString()
+                    }
+                }
+            });
+                var query2 = Reservas.find({
+                    where: {
+                        and: [{
+                            inicioEm: {lte: ctx.instance.inicioEm.toISOString()},
+                            fimEm: {gt: ctx.instance.inicioEm.toISOString()}
+                        }]
+                    }
+                });
+                var query3 = Reservas.find({
+                    where: {
+                        and: [{
+                            inicioEm: {gt: ctx.instance.inicioEm.toISOString()},
+                            fimEm: {lte: ctx.instance.fimEm.toISOString()
+                            }
+                        }]
+                    }
+                });
+                var query4 = Reservas.find({
+                    where: {
+                        and: [{
+                            inicioEm: {lt: ctx.instance.inicioEm.toISOString()},
+                            fimEm: {gt: ctx.instance.fimEm.toISOString()
+                            }
+                        }]
+                    }
+                });    
+                return Promise.all([query1, query2, query3, query4]);
+            }
+            
+            async function confirmaReserva(){
+                var data = await sobreposicaoHorario();
+                var caso1 = data[0];
+                var caso2 = data[1];
+                var caso3 = data[2];
+                var caso4 = data[3];
+                console.log(data);
+                if (caso1.length !== 0 || caso2.length !== 0 || caso3.length !== 0 || caso4.length !== 0) {
+                    var err = new Error();
+                    err.statusCode = 422;
+                    err.message = "Horário indisponível.";
+                    return next(err);
+                } else {
+                    next();
+                }
+            }
+            confirmaReserva();
         };
         });
     }
