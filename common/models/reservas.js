@@ -23,7 +23,6 @@ module.exports = function(Reservas) {
             ctx.instance.valor = ctx.instance.duracao * (0.5);
             var horaInteira = inicioEm % 10000;
             var duracaoMultiplo60 = ctx.instance.duracao % 60;
-            console.log(horaInteira);
             if (duracaoMultiplo60 !== 0 || horaInteira !== 0) {
                 var err = new Error();
                 err.statusCode = 422;
@@ -76,13 +75,24 @@ module.exports = function(Reservas) {
                 var caso2 = data[1];
                 var caso3 = data[2];
                 var caso4 = data[3];
-                console.log(data);
+                console.log(data.find({where:{tipo:'saibro'}}));
+                console.log(ctx.instance.__data.tipo);
                 if (caso1.length !== 0 || caso2.length !== 0 || caso3.length !== 0 || caso4.length !== 0) {
                     var err = new Error();
                     err.statusCode = 422;
                     err.message = "Horário indisponível.";
+                    console.log(data.get('tipo'));
+                    //console.log(reservaSobreposta.includes("tipo"));                    
                     return next(err);
-                } else {
+                } 
+                // else if (ctx.instance.tipo == data.find({where:{tipo}})) {
+                //     var err = new Error();
+                //     err.status = 422;
+                //     err.message = "Este tipo de quadra está em uso."
+                //     return next(err);
+                // }
+                
+                else {
                     next();
                 }
             }
